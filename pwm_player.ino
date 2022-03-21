@@ -1,3 +1,5 @@
+#include <SPI.h>
+
 /************************************************************
  * PWM on (PCINT22/OC0A/AIN0)PD6, Arduino Uno digital pin 6, timer0. 
  * The digital pulse width (based on when pin is toggled off) is modulated by values in array
@@ -9,6 +11,7 @@
  * 
  * To smoothen out output wave, simple RC filter can be used.
  **********************************************************/
+//#define LOAD_TO_SRAM
 
 #include "sram.h"
 
@@ -24,7 +27,6 @@ const unsigned char audio_data[] = {
 };
 #endif
 
-
 void print_settings()
 {
   //interrupt frequency (Hz) = (Arduino clock speed 16,000,000Hz) / (prescaler * (compare match register + 1))`    
@@ -33,7 +35,6 @@ void print_settings()
   sprintf (buffer, "timer1 freq: %luhz", hz);
   Serial.println(buffer);
 }
-
 
 void setup_timers()
 {
@@ -89,8 +90,7 @@ ISR(TIMER1_COMPA_vect)
   if (audio_idx >= audio_len){
     audio_idx = 0;
   }
-  //TODO: seems like read takes too long? introduces noise
-  ram_read(&OCR0A, sram_offset + audio_idx, 1);
+  ram_read((char*)&OCR0A, sram_offset + audio_idx, 1);
   //OCR0A = audio_data[audio_idx];
 }
 
@@ -99,13 +99,11 @@ void setup()
   Serial.begin(9600);
   ram_init();
 #ifdef LOAD_TO_SRAM  
-  ram_write(audio_data, sram_offset, audio_len);
+  ram_write((char*)audio_data, sram_offset, audio_len);
 #endif 
   print_settings();
   setup_timers();
 }
 
 void loop()
-{
-  
-}
+{}
